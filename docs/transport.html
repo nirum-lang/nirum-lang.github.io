@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Transport &mdash; Nirum</title>
+<meta name="generator" content="Nirum 0.5.0">
+<meta name="author" content="Nirum team">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a class="index" href="../index.html">Nirum</a>
+<ul class="manuals toc"><li><a href="../docs/annotation.html">Annotations</a>
+</li>
+<li><a href="../docs/package.html">Package</a>
+</li>
+<li><a href="../docs/refactoring.html">Backward Compatible Refactoring</a>
+</li>
+<li><a href="../docs/serialization.html">Serialization format</a>
+</li>
+<li class="selected"><a href="../docs/transport.html"><strong>Transport</strong>
+</a>
+</li>
+<li><a href="../docs/tutorial.html">Step-by-step tutorial</a>
+</li>
+<li><a href="../docs/target/docs.html">Docs target</a>
+</li>
+<li><a href="../docs/target/python.html">Python target</a>
+</li>
+<li><a href="../CHANGES.html">Nirum changelog</a>
+</li>
+<li><a href="../CONTRIBUTING.html">Contirubtion guide</a>
+</li>
+</ul>
+<ul class="modules toc"><li><a href="../core/index.html"><code>core</code></code>
+&mdash; Built-in types</a>
+</li>
+</ul>
+</nav>
+<article><h1>Transport</h1>
+<p>Nirum currently only has one transport protocol which is based on HTTP and JSON.</p>
+<h2>Method calls</h2>
+<p>A method call is represented as an HTTP request.  By default, it’s a simple
+<code>POST</code> request like the following:</p>
+<pre><code class="language-http">POST /?method=method_name HTTP/1.1
+Content-Type: application/json
+
+{}
+</code></pre>
+<p>The above request is calling a service method named <code>method-name</code> with
+no arguments.</p>
+<p>The <code>method</code> parameter of the query string represents a method name to call.
+It is a service method name.  A client (which makes a request) has to normalize
+the method name.  The normalization rule is the same to serialization format’s
+<a href="./serialization.html#identifier">identifier normalization</a>.</p>
+<p>The request content body is a JSON payload, and it represents arguments to pass.
+It’s a JSON object that the keys are argument names.  Keys also have to be
+normalized in the same
+<a href="./serialization.html#identifier">identifier normalization rule</a> to serialization
+format.  Each value is a serialized corresponding Nirum value according to
+the <a href="./serialization.html">Nirum serialization format</a>.</p>
+<p>Here are some rules that are applied to client and server differently
+(it is a kind of <a href="https://en.wikipedia.org/wiki/Robustness_principle">robustness principle</a>):</p>
+<table>
+<thead>
+<tr>
+
+<th>End</th>
+<th>Client (serializer)</th>
+<th>Server (deserializer)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Argument names</td>
+<td>Have to normalize</td>
+<td>Allow non-normalized names</td></tr>
+<tr>
+<td>Optional arguments</td>
+<td>Do not omit if <code>null</code></td>
+<td>Treat as <code>null</code> if omitted</td></tr>
+<tr>
+<td>Unknown arguments</td>
+<td>Include only known ones</td>
+<td>Simply ignore unknown ones</td></tr></tbody></table>
+<p>The following is another example to call a service method named <code>notify</code>
+with some arguments.  The former code is a Nirum interface and the latter is
+an HTTP request:</p>
+<pre><code class="language-nirum">unboxed email-address (text);
+unboxed phone-number (text);
+
+union contact = email (email-address address)
+              | telephone (phone-number number)
+              ;
+
+service notification-service (
+    notify ({contact} recipients, text title, text? content)
+);
+</code></pre>
+<pre><code class="language-http">POST /?method=notify HTTP/1.1
+Content-Type: application/json
+
+{
+  "recipients": [
+    {
+      "_type": "email",
+      "address": "john.doe@example.com"
+    },
+    {
+      "_type": "telephone",
+      "number": "+1 541-754-3010"
+    }
+  ],
+  "title": "Our product is now 15% cheaper",
+  "content": "See also our new pricing table!"
+}
+</code></pre>
+<h2>Return values</h2>
+<p>A method may return a value or not.  If it does not have a return type
+an HTTP response to an HTTP request that calls it should be simply <code>null</code>:</p>
+<pre><code class="language-http">HTTP/1.1 200 OK
+Content-Type: application/json
+
+null
+</code></pre>
+<p>The status code <code>200 OK</code> indicates the method call is successful.</p>
+<p>Even if it responds with any other value a client should simply ignore that.</p>
+<p>If a method does have a return value an HTTP response to an HTTP request that
+calls it should be a JSON payload that serializes a returned value which is
+a serializaed Nirum value according to
+the <a href="./serialization.html">Nirum serialization format</a>.</p>
+<p>The following examples show a method, a request to call it, and its response:</p>
+<pre><code class="language-nirum">record product (
+    uuid id,
+    text name,
+    int32 stock,
+);
+
+service product-service (
+    product? find-product (uuid product-id)
+);
+</code></pre>
+<pre><code class="language-http">POST /?method=find-product HTTP/1.1
+Content-Type: application/json
+
+{
+    "product_id": "9926eb5a-3893-4aee-ab19-23ebd1a1292e"
+}
+</code></pre>
+<pre><code class="language-http">HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+    "id": "9926eb5a-3893-4aee-ab19-23ebd1a1292e",
+    "name": "White shirt",
+    "stock": 100
+}
+</code></pre>
+<p>As <code>find-product</code> method’s return type is optional (notice the trailing <code>?</code>),
+it may return <code>null</code> as well:</p>
+<pre><code class="language-http">HTTP/1.1 200 OK
+Content-Type: application/json
+
+null
+</code></pre>
+<h2>Error values</h2>
+<p>A method may <code>throws</code> a value or not.  If it has an error type that follows
+a <code>throws</code> keyword a response should be either a return value or an error value.</p>
+<p>If response’s status code is <code>200 OK</code> a JSON payload in the content contains
+a return value.</p>
+<p>If the status code starts with <code>4</code> or <code>5</code> (e.g., <code>400 Bad Request</code>) a JSON
+payload in the content contains an error value.  Similar to return values,
+error values also are a serialized Nirum value according to
+the <a href="./serialization.html">Nirum serialization format</a>.</p>
+<p>The following examples show a method, a request to call it, and its response
+with an error value:</p>
+<pre><code class="language-nirum">record product (
+    uuid id,
+    text name,
+    int32 stock,
+);
+
+@error
+@http-status(code="404")
+unboxed product-not-found (text);
+
+service product-service (
+    product find-product (uuid product-id) throws product-not-found
+);
+</code></pre>
+<pre><code class="language-http">POST /?method=find-product HTTP/1.1
+Content-Type: application/json
+
+{
+    "product_id": "9926eb5a-3893-4aee-ab19-23ebd1a1292e"
+}
+</code></pre>
+<pre><code class="language-http">HTTP/1.1 404 Not Found
+Content-Type: application/json
+
+"There is no product with an ID \"9926eb5a-3893-4aee-ab19-23ebd1a1292e\"."
+</code></pre>
+<p>Note that the status code is not <code>200 OK</code> but <code>404 Not Found</code>.  The JSON payload
+in the response content serializes a Nirum value of <code>product-not-found</code> type.</p>
+</article>
+
+<div class="github"><a href="https://github.com/nirum-lang/nirum" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a></div>
+</body>
+</html>

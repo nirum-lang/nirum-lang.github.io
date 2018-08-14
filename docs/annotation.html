@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Annotations &mdash; Nirum</title>
+<meta name="generator" content="Nirum 0.5.0">
+<meta name="author" content="Nirum team">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a class="index" href="../index.html">Nirum</a>
+<ul class="manuals toc"><li class="selected"><a href="../docs/annotation.html"><strong>Annotations</strong>
+</a>
+</li>
+<li><a href="../docs/package.html">Package</a>
+</li>
+<li><a href="../docs/refactoring.html">Backward Compatible Refactoring</a>
+</li>
+<li><a href="../docs/serialization.html">Serialization format</a>
+</li>
+<li><a href="../docs/transport.html">Transport</a>
+</li>
+<li><a href="../docs/tutorial.html">Step-by-step tutorial</a>
+</li>
+<li><a href="../docs/target/docs.html">Docs target</a>
+</li>
+<li><a href="../docs/target/python.html">Python target</a>
+</li>
+<li><a href="../CHANGES.html">Nirum changelog</a>
+</li>
+<li><a href="../CONTRIBUTING.html">Contirubtion guide</a>
+</li>
+</ul>
+<ul class="modules toc"><li><a href="../core/index.html"><code>core</code></code>
+&mdash; Built-in types</a>
+</li>
+</ul>
+</nav>
+<article><h1>Annotations</h1>
+<p>Annotations can be attached to any declarations, and purpose to be used
+as directive or metadata by target compiler or runtime library.</p>
+<p>Each annotation starts with an <code>@</code> character, and its name follows,
+e.g., <code>@foo</code>.  Annotation names have the same rule to other Nirum identifiers,
+but there’s no separation of facial and behind names.</p>
+<p>There are annotations defined and used by a target compiler, or more than one
+targets.  If an annotation that no target defined is used, they are merely no-op
+(i.e., ignored and even not errored).</p>
+<p>Nirum annotations are similar to Java’s one or C#’s attributes.</p>
+<h2>Declarations</h2>
+<p>All declarations in Nirum can attach annotations.  Declarations in Nirum mean
+things that have their own name, e.g., imports, records, fields, union tags,
+service methods, method parameters.  In other words, any things that can have
+docs comments also can have annotations.</p>
+<p>Each declaration is allowed to have multiple annotations, but their name cannot
+be duplicated.</p>
+<p>For example, the following code is allowed:</p>
+<pre><code class="language-nirum">@foo
+@bar(baz = "qux")
+unboxed filename (text);
+</code></pre>
+<p>Whereas the following code is disallowed:</p>
+<pre><code class="language-nirum">@foo
+@foo(baz = "qux")  // `foo` is duplicated
+unboxed filename (text);
+</code></pre>
+<h2>Arguments</h2>
+<p>Annotations have zero or more arguments.  Every parameter is named, and names
+cannot be duplicated in an annotation.  Annotation arguments follow
+an annotation name and are wrapped by parentheses.  An <code>=</code> operator is placed
+between each parameter name and its argument value.  Arguments are separated
+by a comma, and an optional trailing comma is also allowed.  E.g.:</p>
+<pre><code class="language-nirum">@foo()
+@bar(baz = "qux")
+@quux(corge = "grault", garply = "waldo", fred = "plugh",)
+unboxed filename (text);
+</code></pre>
+<p>Currently, argument values are only allowed to be a text (which is wrapped by
+double quotes), but they could be extended to other types (e.g., integer).
+Note that C-style escape sequences work between double quotes, e.g.:</p>
+<pre><code class="language-nirum">@foo(bar = "Escape double quotes (\") with backslashes (\\).")
+unboxed filename (text);
+</code></pre>
+<h2>Common annotations</h2>
+<p>The following annotations are common among more than one target languages.
+For target-specific annotations, read each target’s docs.</p>
+<h3 id="docs"><code>@docs</code> (<code>docs</code>)</h3>
+<p><code>@docs</code> annotations represent docs comments (<code># ...</code>).  The following two
+examples are equivalent, and the former is internally transformed to the latter:</p>
+<pre><code class="language-nirum"># Docs comments are transformed to `@docs` annotations.
+unboxed filename (text);
+</code></pre>
+<pre><code class="language-nirum">@docs(docs = "Docs comments are transformed to `@docs` annotations.\n")
+unboxed filename (text);
+</code></pre>
+<p>It is primarily for simplifying internal syntax tree, but can be used at runtime
+for other purposes.</p>
+<p>Since all docs comments become transformed to <code>@docs</code> annotations,
+a declaration cannot have both a docs comment and a <code>@docs</code> annotation at
+a time.</p>
+<p><code>docs</code>
+:   A docs text.</p>
+<h3 id="error"><code>@error</code></h3>
+<p>Many object-oriented languages (e.g., Java, Python) require exception classes
+to inherit a specific base class (e.g., <code>Exception</code>) to be thrown.
+<code>@error</code> annotation is a hint for such languages to make a record or a union to
+inherit that.</p>
+<p>For example, the following first Nirum code is compiled to the second Python
+code:</p>
+<pre><code class="language-nirum">@error
+union file-error = file-not-found
+                 | file-not-readable
+                 ;
+</code></pre>
+<pre><code class="language-python">class FileError(Exception):
+    ...
+
+class FileNotFound(FileError):
+    ...
+
+class FileNotReadable(FileError):
+    ...
+</code></pre>
+</article>
+
+<div class="github"><a href="https://github.com/nirum-lang/nirum" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a></div>
+</body>
+</html>

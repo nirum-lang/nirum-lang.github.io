@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Serialization format &mdash; Nirum</title>
+<meta name="generator" content="Nirum 0.5.0">
+<meta name="author" content="Nirum team">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a class="index" href="../index.html">Nirum</a>
+<ul class="manuals toc"><li><a href="../docs/annotation.html">Annotations</a>
+</li>
+<li><a href="../docs/package.html">Package</a>
+</li>
+<li><a href="../docs/refactoring.html">Backward Compatible Refactoring</a>
+</li>
+<li class="selected"><a href="../docs/serialization.html"><strong>Serialization format</strong>
+</a>
+</li>
+<li><a href="../docs/transport.html">Transport</a>
+</li>
+<li><a href="../docs/tutorial.html">Step-by-step tutorial</a>
+</li>
+<li><a href="../docs/target/docs.html">Docs target</a>
+</li>
+<li><a href="../docs/target/python.html">Python target</a>
+</li>
+<li><a href="../CHANGES.html">Nirum changelog</a>
+</li>
+<li><a href="../CONTRIBUTING.html">Contirubtion guide</a>
+</li>
+</ul>
+<ul class="modules toc"><li><a href="../core/index.html"><code>core</code></code>
+&mdash; Built-in types</a>
+</li>
+</ul>
+</nav>
+<article><h1>Serialization format</h1>
+<h2 id="identifier">Identifier</h2>
+<p>All identifiers has to be normalized in JSON representation.  Normalized rules
+are:</p>
+<ul>
+<li>All uppercase characters become to lower.</li>
+<li>All hyphens become to underscore.</li>
+<li>All special fields have to start with an underscore prefix.</li>
+</ul>
+<p>For example:</p>
+<pre><code>record Payload (
+    text FIELD_NAME,
+    float64 second-field-name,
+)
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "payload",
+    "field_name": "FIELD_NAME becomes to field_name",
+    "second_field_name": 3.14
+}
+</code></pre>
+<h2>Behind name</h2>
+<p>Some names can have the behind name which differs from its facial name.
+For example:</p>
+<pre><code>record payload (
+    text facial-name/behind-name,
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "payload",
+    "behind_name": "data goes here."
+}
+</code></pre>
+<h2>Identifier normalization</h2>
+<p>Every identifiers (e.g. behind names) has to be normalized in JSON
+representation.  Although we recommend to use hyphens to separate words
+when declare names in Nirum code, these hyphens must be replaced by underscores
+in JSON. The following are normalization rules:</p>
+<ul>
+<li>Use lowercase alphabets instead of uppercases.</li>
+<li>Use underscores instead of hyphens.
+This rule may help to implement a runtime library for programming languages
+disallowing hyphens for identifiers.</li>
+</ul>
+<p>Although all serializers must normalize names when they serialize Nirum
+objects, we recommend deserializers to accept denormalized names as well
+to follow a <a href="https://en.wikipedia.org/wiki/Robustness_principle">general principle of robustness</a>.</p>
+<h2>Enum type</h2>
+<p>Enum type is equivalent to union type of unary tags in runtime
+(although it might differ if the runtime language has native enum types),
+but it’s equivalent to string in JSON representation.  For example:</p>
+<pre><code>enum gender = male | female;
+
+record payload (
+    gender gender,
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "payload",
+    "gender": "female"
+}
+</code></pre>
+<h2>Unboxed type</h2>
+<p>Unboxed type is equivalent to 1-member record type in runtime,
+but it’s equivalent to its internal type in JSON representation.  For example:</p>
+<pre><code>unboxed offset (float64);
+
+record payload (
+    offset left,
+);
+</code></pre>
+<p>It’s represented in JSON as:</p>
+<pre><code>{
+    "_type": "payload",
+    "left": 3.14
+}
+</code></pre>
+<p>The internal type might be a record type as well:</p>
+<pre><code>record point (
+    float64 left,
+    float64 top,
+);
+
+unboxed coord (point);
+
+record payload (
+    coord location,
+);
+</code></pre>
+<p>It’s represented in JSON as:</p>
+<pre><code>{
+    "_type": "payload",
+    "location": {
+        "_type": "point",
+        "left": 1.23,
+        "top": 4.56
+    }
+}
+</code></pre>
+<p>The internal type also can be a option/set/list/map type:</p>
+<pre><code>unboxed box-option (text?);
+
+enum color = red | green | blue;
+unboxed box-set ({color});
+
+unboxed box-list ([float64]);
+
+unboxed box-map ({uuid: datetime});
+
+record payload (
+    box-option a,
+    box-set b,
+    box-list c,
+    box-map d
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "payload",
+    "a": "box type of an optional type",
+    "b": ["red", "green"],
+    "c": [1.23, 4.56],
+    "d": [
+        {
+            "key": "4970cd83-541d-40a8-abbc-54d5a8142007",
+            "value": "2016-05-10 18:14:08.936767000+09:00"
+        },
+        {
+            "key": "e3c2e2ec-bfb2-46a3-8373-ff0e5dad6f47",
+            "value": "2016-05-10 18:15:24.175702000+09:00"
+        }
+    ]
+}
+</code></pre>
+<h2>Record type</h2>
+<p>As <code>payload</code> records in the above example codes show, record type defines
+a structure consists of fields which have their name and type.  For example:</p>
+<pre><code>record name (
+    text given-name,
+    text family-name,
+);
+
+enum gender = male | female;
+
+record person (
+    name name,
+    date? dob,
+    gender? gender,
+    url? website-url
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "person",
+    "name": {
+        "_type": "name",
+        "family_name": "Hong",
+        "given_name": "Minhee"
+    },
+    "dob": null,
+    "gender": "male",
+    "url": null
+}
+</code></pre>
+<p>When a payload is deserialized, undefined fields are just ignored.
+It can be used to drop an existing field without breaking
+backward compatibility.</p>
+<h2>Union type</h2>
+<p>Union type can be understood as combination of record type and enum type.
+It consists of one or more <em>tags</em> and each tag has zero or more fields.
+So each tag of union type is equivalent to each member of enum type,
+and each field of tag is equivalent to each field of record type.</p>
+<p>For example, let’s adjust <code>name</code> record in the above example to be
+a union type instead of a record type:</p>
+<pre><code>union name
+    = western-name (text first-name, text? middle-name, text last-name)
+    | east-asian-name (text family-name, text given-name)
+    | culture-agnostic-name (text fullname)
+    ;
+
+enum gender = male | female;
+
+record person (
+    name name,
+    date? dob,
+    gender? gender,
+    url? website-url
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "person",
+    "name": {
+        "_type": "name",
+        "_tag": "east-asian-name",
+        "family_name": "Hong",
+        "given_name": "Minhee"
+    },
+    "dob": null,
+    "gender": "male",
+    "url": null
+}
+</code></pre>
+<p>In a similar way to a recrod type, undefined fields in a payload are ignored
+by deserializer.</p>
+<h2>Option type</h2>
+<p>Unless type is optional, its value cannot be <code>null</code> in JSON representation.</p>
+<h2>Set type</h2>
+<p>Set types are serialized to JSON array.  For example:</p>
+<pre><code>record point (
+    float64 left,
+    float64 top,
+);
+
+record payload (
+    {text} text-set,
+    {point} record-set,
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "payload",
+    "text_set": [
+        "set of texts",
+        "the elements should be sorted"
+    ],
+    "record_set": [
+        {
+            "_type": "point",
+            "left": 1.23,
+            "top": 4.56
+        },
+        {
+            "_type": "point",
+            "left": 7.89,
+            "top": 0.12
+        }
+    ]
+}
+</code></pre>
+<p>Note that duplicated elements should be eliminated when it’s serialized.
+If there are duplicated elements in the set when it’s parsed,
+only the latest element must be accepted.</p>
+<h2>List type</h2>
+<p>List types are similar to set types except its order has to be preserved and
+duplicated elements should be possible to exist.</p>
+<p>For example:</p>
+<pre><code>record point (
+    float64 left,
+    float64 top,
+);
+
+record payload (
+    [text] text-list,
+    [point] record-list,
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "payload",
+    "text_list": [
+        "list of texts",
+        "duplicated elements are okay",
+        "duplicated elements are okay"
+    ],
+    "record_list": [
+        {
+            "_type": "point",
+            "left": 1.23,
+            "top": 4.56
+        },
+        {
+            "_type": "point",
+            "left": 7.89,
+            "top": 0.12
+        }
+    ]
+}
+</code></pre>
+<h2>Map type</h2>
+<p>Map types are serialized to array of objects rather than objects, although
+it is counterintuitive. Unlike JSON’s object keys, Nirum’s map keys
+can be more complex than strings.</p>
+<p>For example:</p>
+<pre><code>record point (
+    float64 left,
+    float64 top,
+);
+
+record payload (
+    {point: text} record-keys-text-values,
+    {text: point} text-keys-record-values,
+);
+</code></pre>
+<p>It’s represented in JSON to:</p>
+<pre><code>{
+    "_type": "payload",
+    "record_keys_text_values": [
+        {
+            "key": {
+                "_type": "point",
+                "left": 1.23,
+                "top": 4.56
+            },
+            "value": "keys go to 'key' field and values go to 'value' field"
+        }
+        {
+            "key": {
+                "_type": "point",
+                "left": 7.89,
+                "top": 0.12
+            },
+            "values": "keys are unique but values can be duplicated"
+        }
+    ],
+    "text_keys_record_values": [
+        {
+            "key": "foo",
+            "value": {
+                "_type": "point",
+                "left": 1.23,
+                "top": 4.56
+            }
+        },
+        {
+            "key": "bar",
+            "value": {
+                "_type": "point",
+                "left": 7.89,
+                "top": 0.12
+            }
+        }
+    ]
+}
+</code></pre>
+</article>
+
+<div class="github"><a href="https://github.com/nirum-lang/nirum" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a></div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Docs target &mdash; Nirum</title>
+<meta name="generator" content="Nirum 0.5.0">
+<meta name="author" content="Nirum team">
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<nav><a class="index" href="../../index.html">Nirum</a>
+<ul class="manuals toc"><li><a href="../../docs/annotation.html">Annotations</a>
+</li>
+<li><a href="../../docs/package.html">Package</a>
+</li>
+<li><a href="../../docs/refactoring.html">Backward Compatible Refactoring</a>
+</li>
+<li><a href="../../docs/serialization.html">Serialization format</a>
+</li>
+<li><a href="../../docs/transport.html">Transport</a>
+</li>
+<li><a href="../../docs/tutorial.html">Step-by-step tutorial</a>
+</li>
+<li class="selected"><a href="../../docs/target/docs.html"><strong>Docs target</strong>
+</a>
+</li>
+<li><a href="../../docs/target/python.html">Python target</a>
+</li>
+<li><a href="../../CHANGES.html">Nirum changelog</a>
+</li>
+<li><a href="../../CONTRIBUTING.html">Contirubtion guide</a>
+</li>
+</ul>
+<ul class="modules toc"><li><a href="../../core/index.html"><code>core</code></code>
+&mdash; Built-in types</a>
+</li>
+</ul>
+</nav>
+<article><h1>Docs target</h1>
+<p>This target does not generate any program code files, but HTML pages (and
+some extra assets like CSS).  It generates three kinds of pages:</p>
+<ul>
+<li>A home page that renders <em>README.md</em> file (if exists) or table of contents
+(if there is no <em>README.md</em> file).</li>
+<li>Reference docs from the docs comments in the source code: type definitions,
+union tags, enum members, service methods, etc, and</li>
+<li>Manual pages from CommonMark (i.e., <em>*.md</em>) files.</li>
+</ul>
+<h2>Docs comments</h2>
+<p>Nirum provide two kinds of comments.  One is an ordinary comment which starts
+with <code>//</code>, and other one is a docs comment which begins with <code>#</code>.  Docs target
+is only aware of the latter.</p>
+<p>Docs comments are, unlike ordinal comments, not allowed to any places, but only
+allowed to some specific places.</p>
+<p>Docs comments are actually a syntactic sugar of <a href="../annotation.html#docs"><code>@docs</code></a>
+annotation, hence allowed to be attached to only where annotations are allowed:
+declarations that have a name, e.g., types, fields, members, services, methods,
+parameters, modules.</p>
+<p>You can find <em>examples/shapes.nrm</em> to see examples of docs comments.</p>
+<h2>Manual pages</h2>
+<p>The docs target scans all CommonMark (i.e., <em>*.md</em>) files from the same level
+to <em>package.toml</em> manifest file and its subdirectories, and transforms them
+to HTML pages.</p>
+<h2>Settings</h2>
+<h3><code>title</code> (required): Docs title</h3>
+<p>It goes to <code>&lt;title&gt;</code> elements of generated HTML pages.  It’s usually a name of
+the Nirum package.</p>
+<h3><code>style</code> (optional): Custom CSS</h3>
+<p>It goes to very ending of the CSS file, which means it can override other
+predefined style rules.</p>
+<h3><code>header</code>/<code>footer</code> (optional): Custom header &amp; footer HTML</h3>
+<p>It goes to the very beginning and ending of <code>&lt;body&gt;</code> contents.  It’s usually
+used to customize HTML pages.</p>
+</article>
+
+<div class="github"><a href="https://github.com/nirum-lang/nirum" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a></div>
+</body>
+</html>
